@@ -14,7 +14,7 @@ public class MainActivity extends AppCompatActivity {
     EditText inputPass;
     AppX_Users dbHandler;
     /** These are the optional text field to see the entries in database (uncomment it out to show them) */
-    //TextView testVal;
+    TextView testVal;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
 
         inputAddr = (EditText) findViewById(R.id.editUsername);
         inputPass = (EditText) findViewById(R.id.editPassword);
-        //testVal = (TextView) findViewById(R.id.testVal);
+        testVal = (TextView) findViewById(R.id.testVal);
         dbHandler = new AppX_Users(this, null, null, 4);
         printDatabase();
 

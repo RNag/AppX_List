@@ -65,6 +65,8 @@ public class AppX_Users extends SQLiteOpenHelper {
         if (c.moveToFirst()){
             email_fieldExists = true;
         }
+        c.close();
+        Database.close();
         return email_fieldExists;
     }
 
@@ -99,9 +101,9 @@ public class AppX_Users extends SQLiteOpenHelper {
 
         Cursor c = Database.rawQuery(query, null);
         c.moveToFirst();
-
         while(!c.isAfterLast()){
             if(c.getString(c.getColumnIndex("email")) != null){
+
                 dbString += String.format("%-30s%s\n",c.getString(c.getColumnIndex("email")),c.getString(c.getColumnIndex("keys")));
                 c.moveToNext();
             }
