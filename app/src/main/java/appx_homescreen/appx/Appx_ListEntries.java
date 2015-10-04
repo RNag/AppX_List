@@ -6,14 +6,20 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
 public class Appx_ListEntries extends SQLiteOpenHelper {
 
-    private static final int DATABASE_VERSION = 7;
+    private static final int DATABASE_VERSION = 8;
     private static final String DATABASE_NAME = "AppX_Lists.db";
     public static final String TABLE_LISTDATA = "lists";
     public static final String COLUMN_ID = "_id";
-    public static final String COLUMN_LIST= "listname";
-    public static final String COLUMN_DATE = "when";
+    public static final String COLUMN_LIST = "listname";
+    public static final String COLUMN_DATE = "date";
     public static final String COLUMN_DESC = "about";
     public static final String COLUMN_CONTRIBUTOR = "author";
 
@@ -27,10 +33,10 @@ public class Appx_ListEntries extends SQLiteOpenHelper {
                 TABLE_LISTDATA +
                 " (" +
                 COLUMN_ID + " integer primary key autoincrement not null," +
-                COLUMN_LIST  + " text,"  +
-                COLUMN_DATE  + " text,"  +
-                COLUMN_DESC  + " text"   +
-                COLUMN_CONTRIBUTOR  + " text"   +
+                COLUMN_LIST + " text," +
+                COLUMN_DATE + " date," +
+                COLUMN_DESC + " text," +
+                COLUMN_CONTRIBUTOR + " text" +
                 ");";
         Database.execSQL(query);
     }
@@ -42,30 +48,33 @@ public class Appx_ListEntries extends SQLiteOpenHelper {
     }
 
     @Override
-    public void onDowngrade(SQLiteDatabase db, int newVersion, int oldVersion){
+    public void onDowngrade(SQLiteDatabase db, int newVersion, int oldVersion) {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_LISTDATA);
         onCreate(db);
     }
 
-    public void addList(ListData newList){
-        ContentValues values = new ContentValues();
+    public void addList(ListData newList) {
+        if (listItem_alreadyExists(newList.get_listTitle()) == false) {
 
-        values.put(COLUMN_LIST, newList.get_listTitle());
-        values.put(COLUMN_DATE, newList.get_listDate());
-        values.put(COLUMN_DESC, newList.get_listAbout());
-        values.put(COLUMN_CONTRIBUTOR, newList.get_listAuthor());
-        SQLiteDatabase Database = getWritableDatabase();
-        Database.insert(TABLE_LISTDATA, null, values);
-        Database.close();
 
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_LIST, newList.get_listTitle());
+            values.put(COLUMN_DATE, newList.get_listDate());
+            values.put(COLUMN_DESC, newList.get_listAbout());
+            values.put(COLUMN_CONTRIBUTOR, newList.get_listAuthor());
+            SQLiteDatabase Database = getWritableDatabase();
+            Database.insert(TABLE_LISTDATA, null, values);
+            Database.close();
+        }
     }
 
-    public boolean isThreadCreator(String userValue){
+
+    public boolean isThreadCreator(String userValue) {
         SQLiteDatabase Database = getWritableDatabase();
         String query = "SELECT * FROM " + TABLE_LISTDATA + " WHERE " + COLUMN_CONTRIBUTOR + " = '" + userValue + "'";
-        Cursor c =  Database.rawQuery(query, null);
+        Cursor c = Database.rawQuery(query, null);
         boolean list_isAuthored = false;
-        if (c.moveToFirst()){
+        if (c.moveToFirst()) {
             list_isAuthored = true;
         }
         c.close();
@@ -73,31 +82,66 @@ public class Appx_ListEntries extends SQLiteOpenHelper {
         return list_isAuthored;
     }
 
-    public String sortListbyOrder(){
+    public String sortListbyOrder() {
         SQLiteDatabase Database = getWritableDatabase();
         String query = "SELECT * FROM " + TABLE_LISTDATA + " ORDER BY " + COLUMN_LIST + " DESC";
-        Cursor c =  Database.rawQuery(query, null);
+        Cursor c = Database.rawQuery(query, null);
         c.moveToFirst();
 
         return null;
     }
 
-    public String databaseToString(){
-        String dbString = String.format("%-30s%10s\n","EMAIL","PASSWORD");
+    public ListData returnval1(Integer pos) {
+        ListData return_List;
         SQLiteDatabase Database = getWritableDatabase();
-        String query = "SELECT * FROM " + TABLE_LISTDATA ;
+        String query = "SELECT * FROM " + TABLE_LISTDATA;
+
+        Cursor c = Database.rawQuery(query, null);
+        c.moveToPosition(pos);
+
+
+        return_List = new ListData(c.getString(c.getColumnIndex("listname")), c.getString(c.getColumnIndex("date")), c.getString(c.getColumnIndex("about")), c.getString(c.getColumnIndex("author")));
+        return return_List;
+    }
+
+    public boolean listItem_alreadyExists(String listname){
+        boolean checkfor_DuplicateEntries = false;
+        SQLiteDatabase Database = getWritableDatabase();
+        String query = "SELECT * FROM " + TABLE_LISTDATA + " WHERE " + COLUMN_LIST + " = '" + listname + "'";
+        Cursor c = Database.rawQuery(query, null);
+        if (c.moveToFirst()){
+            checkfor_DuplicateEntries = true;
+        }
+        c.close();
+        Database.close();
+        return checkfor_DuplicateEntries;
+    }
+
+    public List<ListData> returnListEntries_byOrder(String COLUMN_NAME, Integer sortByOrder) {
+        List<ListData> return_List = new ArrayList<ListData>();
+        String query;
+        query = "SELECT * FROM " + TABLE_LISTDATA   + " ORDER BY " + COLUMN_NAME;
+
+        SQLiteDatabase Database = getWritableDatabase();
+
+        if (!sortByOrder.equals(0))
+                query = "SELECT * FROM " + TABLE_LISTDATA  + " ORDER BY " + COLUMN_NAME + " DESC";
+
 
         Cursor c = Database.rawQuery(query, null);
         c.moveToFirst();
+        while (!c.isAfterLast()) {
+            if (c.getString(c.getColumnIndex("listname")) != null) {
 
-        while(!c.isAfterLast()){
-            if(c.getString(c.getColumnIndex("email")) != null){
-                dbString += String.format("%-30s%s\n",c.getString(c.getColumnIndex("email")),c.getString(c.getColumnIndex("keys")));
+                return_List.add(new ListData(c.getString(c.getColumnIndex("listname")), c.getString(c.getColumnIndex("date")), c.getString(c.getColumnIndex("about")), c.getString(c.getColumnIndex("author"))));
+
+                // return_List = new ListData[](c.getString(c.getColumnIndex("listname")),c.getString(c.getColumnIndex("date")),c.getString(c.getColumnIndex("about")),c.getString(c.getColumnIndex("author")));
+
                 c.moveToNext();
             }
         }
+        c.close();
         Database.close();
-        return dbString;
+        return return_List;
     }
-
 }
