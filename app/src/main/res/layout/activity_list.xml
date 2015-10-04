@@ -3,7 +3,7 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:fillViewport="true"
-    android:background="#c1cdbaaa"
+
     android:orientation="vertical"
     android:layout_alignParentLeft="true">
 
@@ -28,37 +28,12 @@
         android:shrinkColumns="*"
         android:id="@+id/listLayout">
 
-        <TableRow
-            android:id="@+id/tableRow1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="5dp" >
 
-            <TextView
-                android:id="@+id/textViewPlateValueLabel"
-                android:layout_weight="3"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:background="#8c1a46ed"
-                android:text="Title"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
-
-            <TextView
-                android:id="@+id/productID"
-                android:layout_weight="7"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:ems="5"
-                android:text="Date"
-                android:background="#e5cdb19a"
-                android:textAppearance="?android:attr/textAppearanceLarge" />
-
-        </TableRow>
 
     </TableLayout>
 
 
 
-
+        <!-- android:background="#e5cdb19a" -->
 </LinearLayout>
     </ScrollView>
