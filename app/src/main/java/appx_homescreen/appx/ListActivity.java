@@ -1,14 +1,8 @@
 package appx_homescreen.appx;
 
-import android.graphics.Color;
-import android.support.v4.view.MarginLayoutParamsCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.Html;
-import android.text.Spannable;
-import android.text.method.LinkMovementMethod;
-import android.text.style.ClickableSpan;
-import android.util.Log;
+import android.text.InputType;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,70 +10,79 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
-import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.TableRow.LayoutParams;
 import android.widget.Toast;
-
-import java.text.DateFormat;
-import java.text.Format;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class ListActivity extends AppCompatActivity {
-    TableLayout listLayout;
-    TableRow tr;
-    TextView c1,c2;
-    EditText edit_listName, edit_listDate, edit_listAbout;
-    Button editButton, delButton, listButton;
-    LayoutParams tr_params;
+    Appx_ListEntries dbHandler; //Public reference to database file
 
-    Appx_ListEntries dbHandler;
-    String[] str = new String[2];
+    TableLayout listLayout;     //Table Container
+    TableRow tr;                //Table Row
+    TextView c1,c2;             //Table Columns
+    Button editButton, delButton, listButton;               //Buttons ('Edit' is currently unused)
+    EditText edit_listName, edit_listDate, edit_listAbout;  //User-input fields
+    LayoutParams tr_params, c_params[]= new LayoutParams[3];     //Table elements layout parameters
 
-    List<String> new_listName = new ArrayList<String>();
-    List<String> new_listDate = new ArrayList<String>();
-    List<String> new_listAbout = new ArrayList<String>();
-    ListData newList;
-    String formatName, formatDate = null;
-    SimpleDateFormat toFormat, fromFormat;
+    /** List declarations to hold predefined list entries since none exist upon creating or upgrading the database version */
+    List<String> new_listName = new ArrayList<>();
+    List<String> new_listDate = new ArrayList<>();
+    List<String> new_listAbout = new ArrayList<>();
 
-    boolean[] Switch_sortOrder = new boolean[2];
+    ListData newList;                                   //Public reference to the list class used to store entries in the database
+    SimpleDateFormat fromFormat, toFormat;              //Format strings to convert to/from the 'accepted' SQLite Date-string format
+    String formatName, formatDate, formatAbout = null;  //The string values for data in the list entries to format as needed
+
+    boolean[] Switch_sortOrder = new boolean[2];    //Boolean array elements to switch between the sort order for column values
+    int UniqueID;                                   //Unique identifiers (ID) for Views that are dynamically created upon startup
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_list);
 
-
+        /** These are where the predefined list entries are defined. They are added dynamically using the 'list' object declaration,
+         *  therefore we don't need to worry about declaring or initializing an array size since we will constantly be adding or
+         *  removing entries to the list. These values for string literals in each list (essentially they each hold specific types
+         *  of data for each list entry to be added) are each stored in a separate list for no other reason than it is easier to read
+         *  and modify the values. Since the string values supplied for the description (about) field can be many sentences and word
+         *  characters long, it makes sense to declare a separate list for each list entry field to enhance readability rather than
+         *  store them in a single aggregated list of type <String[]>, i.e. a String array type. For testing or development purposes,
+         *  one can always modify or rearrange these entries to see how they will be displayed on the screen. You can also safely
+         *  delete or remove any of these list entries if you find that they contribute to the space on the screen  or UI appearing
+         *  too cluttered. However, if such is your intention just remember to delete all the fields for each list entry (i.e. remove
+         *  the individual elements appended to each of the separate lists in each case). A complete declaration of each individual
+         *  entry added to the running list should clearly follow this format:
+         *
+         *      new_listName.add({String} Event Name);
+         *      new_listDate.add({String} Event Date);
+         *      new_listAbout.add({String} Optional description);
+         **/
 
         new_listName.add("VCU Event");
         new_listDate.add("7/18/13");
-        //new_listDate.add("2013-07-18");
+        //new_listDate.add("2013-07-18"); //This format was used in previous versions, but you can uncomment this to see what will be returned
         new_listAbout.add("This is just a simple description for the event to be added, but feel free to make this as long as you want it to be.");
 
         new_listName.add("Another event");
         new_listDate.add("12/20/14");
-       // new_listDate.add("2014-12-20");
         new_listAbout.add("Add some more entries to fill the screen so that you can see that the table is indeed scrollable");
 
-
         new_listName.add("Random meeting");
-       // new_listDate.add("2015-11-04");
         new_listDate.add("11/4/15");
         new_listAbout.add("Description3");
 
-        new_listName.add("The last one listed");
-        //new_listDate.add("2015-11-01");
+        new_listName.add("Cycling Club @VCU");
         new_listDate.add("11/1/15");
-        new_listAbout.add("Description4");
+        new_listAbout.add("Another simple example of an event meeting listed. Please also note that: \n\n" +
+                "This is an actual club that exists, this was not made up for the sake of creating or generating a sample event " +
+                "that can be used to introduce an example. ");
 
         fromFormat = new SimpleDateFormat("M/d/yy", java.util.Locale.US);
         toFormat = new SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
@@ -96,7 +99,6 @@ public class ListActivity extends AppCompatActivity {
             newList = new ListData(new_listName.get(i), formatDate, new_listAbout.get(i));
             dbHandler.addList(newList);
         }
-
 
         listLayout = (TableLayout) findViewById(R.id.listLayout);
 
@@ -115,7 +117,7 @@ public class ListActivity extends AppCompatActivity {
          *  under the main directory or folder of this activity declaration for more details referencing the function
          *  declaration statements.
          *
-         * public List<ListData> returnListEntries_byOrder(String COLUMN_NAME, Integer sortByOrder)
+         * public List<ListData> returnListEntries_byOrder(String COLUMN_NAME, int sortByOrder)
          *  Takes values as (Remember, CaSe-SENSITIVE):
          *
          *  BEGIN
@@ -127,8 +129,8 @@ public class ListActivity extends AppCompatActivity {
          *          (String) author     IS      Contributor {Thread Starter}
          *
          *      SELECT [sortByOrder]:
-         *          (Integer) 0         IS      ASCENDING {Order}
-         *          (Integer) 1         IS      DESCENDING {Order}
+         *          (int) 0         IS      ASCENDING {Order}
+         *          (int) 1         IS      DESCENDING {Order}
          *  DONE
          * */
 
@@ -136,7 +138,7 @@ public class ListActivity extends AppCompatActivity {
 
     }
 
-    public void PopulateTableElements(String SortByColumnName, Integer Order){
+    public void PopulateTableElements(String SortByColumnName, int Order){
         AddTableHeaders();
 
         List<ListData> sortedList = dbHandler.returnListEntries_byOrder(SortByColumnName,Order);
@@ -158,12 +160,10 @@ public class ListActivity extends AppCompatActivity {
     }
 
     public void AddTableHeaders(){
-        LayoutParams c_params[] = new LayoutParams[2];
-
         tr_params = new TableRow.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
         c_params[0] = new TableRow.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1.2f);
         c_params[1] = new TableRow.LayoutParams(0, LayoutParams.WRAP_CONTENT, 0.8f);
-        c_params[0].setMargins(0, 0, 0, 0);
+        c_params[0].setMargins(0,0,0,0);
         c_params[1].setMargins(0,0,280,0);
 
         tr = new TableRow(this);
@@ -172,27 +172,24 @@ public class ListActivity extends AppCompatActivity {
         c1 = new TextView(this);
         c1.setBackgroundColor(0x8c1a46ed);
         c1.setText("Title");
-        c1.setOnClickListener(onClick());
-
         c1.setPadding(100, 0, 0, 0);
         c1.setLayoutParams(c_params[0]);
         c1.setTextAppearance(android.R.style.TextAppearance_Large);
+        c1.setOnClickListener(onClick());
 
         c2 = new TextView(this);
         c2.setText("Date");
-        c2.setOnClickListener(onClick());
         c2.setLayoutParams(c_params[1]);
         c2.setTextAppearance(android.R.style.TextAppearance_Large);
         c2.setGravity(Gravity.CENTER);
+        c2.setOnClickListener(onClick());
+
         tr.addView(c1);
         tr.addView(c2);
         listLayout.addView(tr);
-
     }
 
     public void AddRowEntry(String list_item1, String list_item2, String list_item3) {
-        LayoutParams c_params[] = new LayoutParams[3];
-
         tr = new TableRow(this);
         c1 = new TextView(this);
         c2 = new TextView(this);
@@ -207,17 +204,20 @@ public class ListActivity extends AppCompatActivity {
         delButton.setOnClickListener(onClick());
 
         c_params[0] = new TableRow.LayoutParams(0, LayoutParams.WRAP_CONTENT, 0.6f);
-        c1.setPadding(30, 0, 10, 0);
         c_params[1] = new TableRow.LayoutParams(0, LayoutParams.WRAP_CONTENT, 0.4f);
         c_params[2] = new TableRow.LayoutParams(0, LayoutParams.WRAP_CONTENT, 0.4f);
+
+        c1.setPadding(30, 0, 10, 0);
         c1.setLayoutParams(c_params[0]);
-        c2.setLayoutParams(c_params[1]);
-        c2.setGravity(Gravity.CENTER);
-        delButton.setLayoutParams(c_params[2]);
         //c1.setBackgroundColor(0x8c4f75ed);
         c1.setBackgroundColor(0xe5dee7e8);
 
-        delButton.setWidth(4);
+        c2.setLayoutParams(c_params[1]);
+        c2.setGravity(Gravity.CENTER);
+
+        delButton.setLayoutParams(c_params[2]);
+        delButton.setWidth(2);
+
         tr.addView(c1);
         tr.addView(c2);
         //tr.addView(editButton);
@@ -235,66 +235,110 @@ public class ListActivity extends AppCompatActivity {
 
 
     public void createListEntryMethod(){
-        LayoutParams c_params[] = new LayoutParams[2];
+        c_params[0] = new TableRow.LayoutParams(500, 5);
+        c_params[0].setMargins(0,0,0,40);
 
         tr = new TableRow(this);
+        View c1_view = new View(this);
+        c1_view.setBackgroundColor(0xe5386569);
+        c1_view.setLayoutParams(c_params[0]);
+        tr.addView(c1_view);
+        listLayout.addView(tr);
+
+
         c_params[0] = new TableRow.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        c_params[0].setMargins(20, 0, 20, 20);
+        c_params[0].setMargins(0, 0, 0, 40);
+
+        tr = new TableRow(this);
         c1 = new TextView(this);
-        c1.setText(String.format("%s\n\n", "If you would like to list an event, please add the following information below (also note that the description is an optional field)."));
+        c1.setText("List an Event");
+        c1.setTextAppearance(android.R.style.TextAppearance_Large);
         tr.addView(c1, c_params[0]);
         listLayout.addView(tr);
 
+
+        c_params[0] = new TableRow.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        c_params[0].setMargins(40, 0, 20, 120);
+
         tr = new TableRow(this);
+        c1 = new TextView(this);
+        c1.setText(String.format("%s", "If you would like to add an event, please use the form below and supply the following information  (also note that the description is an optional field)."));
+        tr.addView(c1, c_params[0]);
+        listLayout.addView(tr);
+
+
         tr_params = new TableRow.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
         tr_params.setMargins(60, 20, 20, 20);
 
+        tr = new TableRow(this);
         edit_listName = new EditText(this);
         edit_listName.setHint("Event Name");
+        int temp_id = getUniqueID();
+        edit_listName.setNextFocusDownId(temp_id);
         edit_listName.setSingleLine(true);
-        edit_listName.setWidth(1);
-        edit_listName.setEms(4);
-
         c_params[0] = new TableRow.LayoutParams(0, LayoutParams.WRAP_CONTENT, 0.4f);
         edit_listName.setLayoutParams(c_params[0]);
 
         edit_listDate= new EditText(this);
         edit_listDate.setHint("Date of the Event");
+        edit_listDate.setInputType(InputType.TYPE_CLASS_DATETIME);
         edit_listDate.setLayoutParams(c_params[0]);
+        edit_listDate.setId(temp_id);
         edit_listDate.setSingleLine(true);
-        edit_listDate.setHighlightColor(Color.RED);
 
         edit_listAbout = new EditText(this);
         edit_listAbout.setHint("Add a description for this event (optional)");
         edit_listAbout.setMaxLines(3);
 
         listButton = new Button(this);
-        listButton.setText("Create"); listButton.setOnClickListener(onClick());
+        listButton.setText("Create");
+        listButton.setOnClickListener(onClick());
+
         tr.addView(edit_listName);
         tr.addView(edit_listDate);
         listLayout.addView(tr);
 
+
         tr = new TableRow(this);
         tr.addView(edit_listAbout);
         listLayout.addView(tr);
+
+
         tr = new TableRow(this);
         tr.addView(listButton);
         listLayout.addView(tr);
-
-
     }
 
+    public synchronized int getUniqueID(){
+    /**
+     *   Returns a unique ID (autoincrement value of int type) which in this case initially increments from a default value of '1'.
+     *   The purpose for declaring and returning an ID value is for cases when such dynamic, i.e. programmatically created elements
+     *   will need to be referenced at some unknown point in the code. Using this method, it is entirely possible for an earlier
+     *   partition in the code to reference an undeclared element (at that current point in time that such an individual line is
+     *   read in) by using its ID tag value, before reaching that line in the code where that element is even instantiated or
+     *   even before it is assigned the identifier value that has been referenced a priori to the declaration statement. This will
+     *   be useful particularly if multiple IDs are being assigned to various objects or instances and you want to make sure that
+     *   each one of them will have a unique identifier value that can be referenced in any point or section of the code without
+     *   worrying overmuch about any particular case of overlap that can result from duplicate IDs being assigned to various
+     *   elements.
+     *   */
+
+        UniqueID ++;
+        return UniqueID;
+    }
 
 
     public View.OnClickListener onClick () {
         return new View.OnClickListener() {
+
+
             public void onClick(View view) {
                 ViewGroup ListRow = (ViewGroup) view.getParent();
 
                 if (view instanceof TextView) {
                     View FirstRow = listLayout.getChildAt(0);
                     if (FirstRow.equals(ListRow)) {
-                        Integer c = ListRow.indexOfChild(view);
+                        int c = ListRow.indexOfChild(view);
                         listLayout.removeAllViews();
                         switch(c) {
                             case 0:
@@ -308,38 +352,45 @@ public class ListActivity extends AppCompatActivity {
                         }
                         Switch_sortOrder[c] ^= Boolean.TRUE;
                     }
-
                 }
+
                 if (view instanceof Button) {
-                    //Toast.makeText(getApplicationContext(), "TRUE BUTTON", Toast.LENGTH_LONG).show();
-
-
-                String tmp = ((Button) view).getText().toString().trim();
-                switch (tmp) {
-                    case "Edit":
-                        TextView test = (TextView) ((ViewGroup) view.getParent()).getChildAt(0);
-                        Toast.makeText(getApplicationContext(), test.getText().toString(), Toast.LENGTH_LONG).show();
+                    String tmp = ((Button) view).getText().toString().trim();
+                    switch (tmp) {
+                        case "Edit":
+                            TextView test = (TextView) ((ViewGroup) view.getParent()).getChildAt(0);
+                            Toast.makeText(getApplicationContext(), test.getText().toString(), Toast.LENGTH_LONG).show();
                         break;
-                    case "Delete":
-                        ViewGroup ListDesc = (ViewGroup) (listLayout.getChildAt(listLayout.indexOfChild(ListRow) + 1));
-                        listLayout.removeView(ListRow);
-                        listLayout.removeView(ListDesc);
+
+                        case "Delete":
+                            ViewGroup ListDesc = (ViewGroup) (listLayout.getChildAt(listLayout.indexOfChild(ListRow) + 1));
+                            String listName = ((TextView)ListRow.getChildAt(0)).getText().toString();
+                            dbHandler.deleteList(listName);
+                            listLayout.removeView(ListRow);
+                            listLayout.removeView(ListDesc);
+                            Toast.makeText(getApplicationContext(),"The listing '"+ listName +"' has been removed.", Toast.LENGTH_LONG).show();
                         break;
-                    case "Create":
 
-                        fromFormat = new SimpleDateFormat("M/d/yy", java.util.Locale.US);
-                        toFormat = new SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
-
+                        case "Create":
+                            fromFormat = new SimpleDateFormat("M/d/yy", java.util.Locale.US);
+                            toFormat = new SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
                             try {
-
                                 formatName = edit_listName.getText().toString().trim();
-                                if (formatName.length() < 2) {
+                                formatName = formatName.replaceAll("\\s+", " ");
+                                if (formatName.replaceAll("( )","").length() < 2) {
                                     Toast.makeText(getApplicationContext(), "Please enter a valid name for the event (2 char. minimum)", Toast.LENGTH_LONG).show();
+                                    return;
+                                }
+                                else if (dbHandler.listItem_alreadyExists(formatName)){
+                                    Toast.makeText(getApplicationContext(), "There is already a duplicate entry for this event, your listing could not be added.", Toast.LENGTH_LONG).show();
                                     return;
                                 }
                                 formatName = formatName.substring(0,1).toUpperCase() + formatName.substring(1);
                                 formatDate = toFormat.format(fromFormat.parse(edit_listDate.getText().toString()));
-                                newList = new ListData(formatName, formatDate, edit_listAbout.getText().toString().trim());
+                                formatAbout = edit_listAbout.getText().toString().trim();
+                                formatAbout = formatAbout.replaceAll("( )+"," ");
+                                formatAbout = formatAbout.replaceAll("(\\r?\\n){2,}","\n\n");
+                                newList = new ListData(formatName, formatDate, formatAbout);
                                 dbHandler.addList(newList);
                                 listLayout.removeAllViews();
                                 PopulateTableElements("_id", 0);
@@ -348,15 +399,14 @@ public class ListActivity extends AppCompatActivity {
                             catch (ParseException e){
                                 Toast.makeText(getApplicationContext(), "The date '"+ edit_listDate.getText().toString() + "' was unparseable.\nPlease enter in the format: " + fromFormat.toLocalizedPattern(),Toast.LENGTH_LONG).show();
                             }
-
                         break;
+                    }
                 }
             }
 
-            }
-        };
 
-    }
+        };
+}
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

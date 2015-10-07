@@ -5,11 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class Appx_ListEntries extends SQLiteOpenHelper {
@@ -55,8 +51,6 @@ public class Appx_ListEntries extends SQLiteOpenHelper {
 
     public void addList(ListData newList) {
         if (listItem_alreadyExists(newList.get_listTitle()) == false) {
-
-
             ContentValues values = new ContentValues();
             values.put(COLUMN_LIST, newList.get_listTitle());
             values.put(COLUMN_DATE, newList.get_listDate());
@@ -68,6 +62,12 @@ public class Appx_ListEntries extends SQLiteOpenHelper {
         }
     }
 
+    public void deleteList(String listName){
+        SQLiteDatabase Database = getWritableDatabase();
+        String query = "DELETE FROM " + TABLE_LISTDATA + " WHERE " + COLUMN_LIST + " = '" + listName + "'";
+        Database.execSQL(query);
+        Database.close();
+    }
 
     public boolean isThreadCreator(String userValue) {
         SQLiteDatabase Database = getWritableDatabase();
@@ -80,28 +80,6 @@ public class Appx_ListEntries extends SQLiteOpenHelper {
         c.close();
         Database.close();
         return list_isAuthored;
-    }
-
-    public String sortListbyOrder() {
-        SQLiteDatabase Database = getWritableDatabase();
-        String query = "SELECT * FROM " + TABLE_LISTDATA + " ORDER BY " + COLUMN_LIST + " DESC";
-        Cursor c = Database.rawQuery(query, null);
-        c.moveToFirst();
-
-        return null;
-    }
-
-    public ListData returnval1(Integer pos) {
-        ListData return_List;
-        SQLiteDatabase Database = getWritableDatabase();
-        String query = "SELECT * FROM " + TABLE_LISTDATA;
-
-        Cursor c = Database.rawQuery(query, null);
-        c.moveToPosition(pos);
-
-
-        return_List = new ListData(c.getString(c.getColumnIndex("listname")), c.getString(c.getColumnIndex("date")), c.getString(c.getColumnIndex("about")), c.getString(c.getColumnIndex("author")));
-        return return_List;
     }
 
     public boolean listItem_alreadyExists(String listname){
@@ -117,29 +95,26 @@ public class Appx_ListEntries extends SQLiteOpenHelper {
         return checkfor_DuplicateEntries;
     }
 
-    public List<ListData> returnListEntries_byOrder(String COLUMN_NAME, Integer sortByOrder) {
-        List<ListData> return_List = new ArrayList<ListData>();
+    public List<ListData> returnListEntries_byOrder(String COLUMN_NAME, int sortByOrder) {
+        List<ListData> return_List = new ArrayList<>();
         String query;
         query = "SELECT * FROM " + TABLE_LISTDATA   + " ORDER BY " + COLUMN_NAME;
 
         SQLiteDatabase Database = getWritableDatabase();
 
-        if (!sortByOrder.equals(0))
+        if (!(sortByOrder == 0))
                 query = "SELECT * FROM " + TABLE_LISTDATA  + " ORDER BY " + COLUMN_NAME + " DESC";
-
 
         Cursor c = Database.rawQuery(query, null);
         c.moveToFirst();
+
         while (!c.isAfterLast()) {
             if (c.getString(c.getColumnIndex("listname")) != null) {
-
                 return_List.add(new ListData(c.getString(c.getColumnIndex("listname")), c.getString(c.getColumnIndex("date")), c.getString(c.getColumnIndex("about")), c.getString(c.getColumnIndex("author"))));
-
-                // return_List = new ListData[](c.getString(c.getColumnIndex("listname")),c.getString(c.getColumnIndex("date")),c.getString(c.getColumnIndex("about")),c.getString(c.getColumnIndex("author")));
-
                 c.moveToNext();
             }
         }
+
         c.close();
         Database.close();
         return return_List;
