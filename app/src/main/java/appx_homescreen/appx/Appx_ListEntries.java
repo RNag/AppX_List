@@ -95,7 +95,6 @@ public class Appx_ListEntries extends SQLiteOpenHelper {
         return checkfor_DuplicateEntries;
     }
 
-
     public List<ListData> returnListEntries_byOrder(String COLUMN_NAME, int sortByOrder) {
         List<ListData> return_List = new ArrayList<ListData>();
         String query;
