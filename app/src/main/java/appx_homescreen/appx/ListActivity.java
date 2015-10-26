@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class ListActivity extends AppCompatActivity {
     Appx_ListEntries dbHandler; //Public reference to database file
 
@@ -136,6 +137,12 @@ public class ListActivity extends AppCompatActivity {
 
         PopulateTableElements("_id",0);
 
+        edit_listName = (EditText) findViewById(R.id.editEventName);
+        edit_listDate = (EditText) findViewById(R.id.editEventDate);
+        edit_listAbout = (EditText) findViewById(R.id.editDesc);
+        Button Create = (Button) findViewById(R.id.button);
+        Create.setOnClickListener(onClick());
+
     }
 
     public void PopulateTableElements(String SortByColumnName, int Order){
@@ -156,7 +163,16 @@ public class ListActivity extends AppCompatActivity {
             }
             AddRowEntry(fetchListItem.get_listTitle(), formatDate, fetchListItem.get_listAbout());
         }
-        createListEntryMethod();
+
+        c_params[0] = new TableRow.LayoutParams(500, 5);
+        c_params[0].setMargins(0,0,0,40);
+
+        tr = new TableRow(this);
+        View c1_view = new View(this);
+        c1_view.setBackgroundColor(0xe5386569);
+        c1_view.setLayoutParams(c_params[0]);
+        tr.addView(c1_view);
+        listLayout.addView(tr);
     }
 
     public void AddTableHeaders(){
@@ -233,81 +249,6 @@ public class ListActivity extends AppCompatActivity {
         listLayout.addView(tr);
     }
 
-
-    public void createListEntryMethod(){
-        c_params[0] = new TableRow.LayoutParams(500, 5);
-        c_params[0].setMargins(0,0,0,40);
-
-        tr = new TableRow(this);
-        View c1_view = new View(this);
-        c1_view.setBackgroundColor(0xe5386569);
-        c1_view.setLayoutParams(c_params[0]);
-        tr.addView(c1_view);
-        listLayout.addView(tr);
-
-
-        c_params[0] = new TableRow.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        c_params[0].setMargins(0, 0, 0, 40);
-
-        tr = new TableRow(this);
-        c1 = new TextView(this);
-        c1.setText("List an Event");
-        c1.setTextAppearance(android.R.style.TextAppearance_Large);
-        tr.addView(c1, c_params[0]);
-        listLayout.addView(tr);
-
-
-        c_params[0] = new TableRow.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        c_params[0].setMargins(40, 0, 20, 120);
-
-        tr = new TableRow(this);
-        c1 = new TextView(this);
-        c1.setText(String.format("%s", "If you would like to add an event, please use the form below and supply the following information  (also note that the description is an optional field)."));
-        tr.addView(c1, c_params[0]);
-        listLayout.addView(tr);
-
-
-        tr_params = new TableRow.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        tr_params.setMargins(60, 20, 20, 20);
-
-        tr = new TableRow(this);
-        edit_listName = new EditText(this);
-        edit_listName.setHint("Event Name");
-        int temp_id = getUniqueID();
-        edit_listName.setNextFocusDownId(temp_id);
-        edit_listName.setSingleLine(true);
-        c_params[0] = new TableRow.LayoutParams(0, LayoutParams.WRAP_CONTENT, 0.4f);
-        edit_listName.setLayoutParams(c_params[0]);
-
-        edit_listDate= new EditText(this);
-        edit_listDate.setHint("Date of the Event");
-        edit_listDate.setInputType(InputType.TYPE_CLASS_DATETIME);
-        edit_listDate.setLayoutParams(c_params[0]);
-        edit_listDate.setId(temp_id);
-        edit_listDate.setSingleLine(true);
-
-        edit_listAbout = new EditText(this);
-        edit_listAbout.setHint("Add a description for this event (optional)");
-        edit_listAbout.setMaxLines(3);
-
-        listButton = new Button(this);
-        listButton.setText("Create");
-        listButton.setOnClickListener(onClick());
-
-        tr.addView(edit_listName);
-        tr.addView(edit_listDate);
-        listLayout.addView(tr);
-
-
-        tr = new TableRow(this);
-        tr.addView(edit_listAbout);
-        listLayout.addView(tr);
-
-
-        tr = new TableRow(this);
-        tr.addView(listButton);
-        listLayout.addView(tr);
-    }
 
     public synchronized int getUniqueID(){
     /**
@@ -394,6 +335,9 @@ public class ListActivity extends AppCompatActivity {
                                 dbHandler.addList(newList);
                                 listLayout.removeAllViews();
                                 PopulateTableElements("_id", 0);
+                                edit_listName.setText("");
+                                edit_listDate.setText("");
+                                edit_listAbout.setText("");
                                 Toast.makeText(getApplicationContext(),"The event '"+ formatName +"' was successfully added!",Toast.LENGTH_LONG).show();
                             }
                             catch (ParseException e){
